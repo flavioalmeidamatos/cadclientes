@@ -90,7 +90,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ mode }) => {
     }, [mode]);
 
     // Generalized Focus Trap Handler (prevents leaving field if empty)
-    const handleFocusTrapBlur = (field: string, value: string, ref: React.RefObject<HTMLInputElement>) => {
+    const handleFocusTrapBlur = (field: string, value: string, ref: React.RefObject<HTMLInputElement | null>) => {
         // If lock is held by another field, do nothing to prevent fighting
         if (focusLockRef.current && focusLockRef.current !== field) return;
 
@@ -289,7 +289,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ mode }) => {
                 logradouro: formData.address,
                 bairro: formData.neighborhood,
                 cidade: formData.city,
-                estado: formData.state,
+                estado: formData.state.toUpperCase().trim().substring(0, 2),
                 numero: formData.number,
                 complemento: formData.complement,
                 avatar_url: avatarUrl,
@@ -509,8 +509,9 @@ const ClientForm: React.FC<ClientFormProps> = ({ mode }) => {
                                 aria-label="Estado (UF)"
                                 className={`w-full border border-slate-300 dark:border-slate-700 rounded-md text-sm p-3 outline-none dark:text-white transition-all ${addressLocked ? 'bg-slate-100 dark:bg-slate-900 opacity-70 cursor-not-allowed focus:ring-0' : 'bg-white dark:bg-slate-800 focus:ring-2 focus:ring-primary focus:border-primary'}`}
                                 type="text"
+                                maxLength={2}
                                 value={formData.state}
-                                onChange={e => !addressLocked && setFormData({ ...formData, state: e.target.value })}
+                                onChange={e => !addressLocked && setFormData({ ...formData, state: e.target.value.toUpperCase().replace(/[^A-Z]/g, '') })}
                             />
                         </div>
                     </div>

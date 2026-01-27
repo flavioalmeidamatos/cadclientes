@@ -4,6 +4,7 @@ import { Icon } from '../components/Icon';
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, Tooltip, XAxis } from 'recharts';
 import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { ADMIN_EMAILS } from '../constants';
 
 const Dashboard: React.FC = () => {
     const { user } = useAuth();
@@ -22,10 +23,15 @@ const Dashboard: React.FC = () => {
         const fetchDashboardData = async () => {
             setLoading(true);
             try {
-                const { data: clients, error } = await supabase
-                    .from('clientes')
-                    .select('*')
-                    .eq('usuario_id', user.id);
+                const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
+
+                let query = supabase.from('clientes').select('*');
+
+                if (!isAdmin) {
+                    query = query.eq('usuario_id', user.id);
+                }
+
+                const { data: clients, error } = await query;
 
                 if (error) throw error;
 
@@ -50,11 +56,19 @@ const Dashboard: React.FC = () => {
                 const growthData = monthNames.map((name, i) => ({ name, value: monthlyGrowth[i] }));
                 const canceledData = monthNames.map((name, i) => ({ name, value: monthlyCanceled[i] }));
 
-                // Agrupamento por estado
+                // Agrupamento por estado (Garantindo UF de 2 letras)
                 const states: Record<string, number> = {};
                 clients.forEach(c => {
                     if (c.estado) {
-                        const state = c.estado.toUpperCase();
+                        let state = c.estado.toUpperCase().trim();
+                        // Mapeamento básico para nomes comuns que podem ter sido digitados por extenso
+                        if (state === 'RIO DE JANEIRO') state = 'RJ';
+                        if (state === 'SÃO PAULO' || state === 'SAO PAULO') state = 'SP';
+                        if (state === 'MINAS GERAIS') state = 'MG';
+
+                        // Se ainda for maior que 2 caracteres, pega apenas os 2 primeiros (HEURÍSTICA)
+                        if (state.length > 2) state = state.substring(0, 2);
+
                         states[state] = (states[state] || 0) + 1;
                     }
                 });

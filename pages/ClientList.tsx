@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { ADMIN_EMAILS } from '../constants';
 
 interface Cliente {
   id: string;
@@ -22,12 +23,19 @@ const ClientList: React.FC = () => {
 
   const fetchClientes = async () => {
     if (!user) return;
+    const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
+
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('clientes')
-        .select('id, nome_completo, cidade, estado, avatar_url')
-        .order('criado_em', { ascending: false });
+        .select('id, nome_completo, cidade, estado, avatar_url');
+
+      if (!isAdmin) {
+        query = query.eq('usuario_id', user.id);
+      }
+
+      const { data, error } = await query.order('criado_em', { ascending: false });
 
       if (error) throw error;
       setClientes(data || []);
@@ -47,8 +55,10 @@ const ClientList: React.FC = () => {
     c.cidade.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
+
   return (
-    <Layout title="Meus Clientes">
+    <Layout title={isAdmin ? "Todos os Clientes" : "Meus Clientes"}>
       <div className="p-4">
         {/* Search Bar */}
         <div className="mb-6 relative">

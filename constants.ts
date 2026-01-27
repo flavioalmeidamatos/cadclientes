@@ -1,5 +1,10 @@
 import { Client } from "./types";
 
+export const ADMIN_EMAILS = [
+  'matos.almeida.flavio@gmail.com',
+  'lucas.peixoto19@live.com'
+];
+
 export const MOCK_CLIENT: Client = {
   id: "1",
   name: "MARCOS OLIVEIRA SANTOS",
