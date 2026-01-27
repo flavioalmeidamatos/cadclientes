@@ -2,7 +2,8 @@ import { Client } from "./types";
 
 export const ADMIN_EMAILS = [
   'matos.almeida.flavio@gmail.com',
-  'lucas.peixoto19@live.com'
+  'lucas.peixoto19@live.com',
+  'biajudocarj542@gmail.com'
 ];
 
 export const MOCK_CLIENT: Client = {
