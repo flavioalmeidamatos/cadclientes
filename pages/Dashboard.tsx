@@ -70,7 +70,7 @@ const Dashboard: React.FC = () => {
                     .slice(0, 5);
 
                 setStats({ active: activeCount, inactive: inactiveCount, growthData, canceledData, stateData });
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Erro ao buscar dados do dashboard:', err);
             } finally {
                 setLoading(false);
@@ -125,7 +125,7 @@ const Dashboard: React.FC = () => {
                                         contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
                                         itemStyle={{ color: '#fff' }}
                                         cursor={false}
-                                        formatter={(value: number) => [value, 'Clientes']}
+                                        formatter={(value: any) => [value, 'Clientes']}
                                     />
                                     <Bar dataKey="value" fill="#f2711c" radius={[4, 4, 0, 0]} barSize={20} />
                                 </BarChart>
@@ -156,7 +156,7 @@ const Dashboard: React.FC = () => {
                                         contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
                                         itemStyle={{ color: '#fff' }}
                                         cursor={false}
-                                        formatter={(value: number) => [value, 'Cancelados']}
+                                        formatter={(value: any) => [value, 'Cancelados']}
                                     />
                                     <Area type="monotone" dataKey="value" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorValueCanceled)" />
                                 </AreaChart>
@@ -176,7 +176,7 @@ const Dashboard: React.FC = () => {
                                     <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                                         <div
                                             className={`h-full ${item.color}`}
-                                            ref={(el) => { if (el) el.style.width = `${item.pct}%`; }}
+                                            ref={(el: HTMLDivElement | null) => { if (el) el.style.width = `${item.pct}%`; }}
                                             role="img"
                                             aria-label={`${item.label}: ${item.pct}%`}
                                             title={`${item.label}: ${item.pct}%`}
