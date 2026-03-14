@@ -28,6 +28,7 @@ Crie um arquivo `.env.local` com:
 ```env
 VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
+VITE_APP_URL=https://cadclientes.vercel.app
 ```
 
 ## Como rodar
@@ -63,4 +64,4 @@ As paginas autenticadas consultam `clientes` e `usuarios`, enquanto login e cada
 
 ## Deploy
 
-O deploy pode ser feito na Vercel como aplicacao Vite estaticamente servida. Tambem e necessario configurar na Vercel as variaveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
+O deploy pode ser feito na Vercel como aplicacao Vite estaticamente servida. Tambem e necessario configurar na Vercel as variaveis `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` e `VITE_APP_URL`.

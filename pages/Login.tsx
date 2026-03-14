@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LOGO_URL } from '../constants';
 
+import { translateSupabaseError } from '../auth';
 import { supabase } from '../supabase';
 
 const Login: React.FC = () => {
@@ -11,32 +12,25 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
-  // State for errors
   const [errors, setErrors] = useState({ username: '', password: '' });
 
-  // Refs for Focus Trapping
   const userRef = useRef<HTMLInputElement>(null);
   const passRef = useRef<HTMLInputElement>(null);
 
-  // Ref to track which field currently holds the "focus lock"
   const focusLockRef = useRef<string | null>(null);
 
-  // RFC 5322 Official Standard Regex (Practical Implementation)
   const EMAIL_REGEX = /^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
   const validate = (field: 'username' | 'password', value: string) => {
-    if (!value.trim()) return 'Campo obrigatório';
+    if (!value.trim()) return 'Campo obrigatorio';
 
-    if (field === 'username') {
-      if (!EMAIL_REGEX.test(value)) {
-        return 'Formato de e-mail inválido';
-      }
+    if (field === 'username' && !EMAIL_REGEX.test(value)) {
+      return 'Formato de e-mail invalido';
     }
 
     return '';
   };
 
-  // Handle Focus Trap on Blur (Mouse click away)
   const handleBlur = (
     field: 'username' | 'password',
     value: string,
@@ -44,24 +38,15 @@ const Login: React.FC = () => {
   ) => {
     const error = validate(field, value);
     if (error) {
-      setErrors(prev => ({ ...prev, [field]: error }));
-      // Temporarily disabled focus forcing to prevent infinite loops during mouse interaction
-      /*
-      focusLockRef.current = field; // Acquire lock
-      setTimeout(() => {
-        ref.current?.focus();
-      }, 0);
-      */
+      setErrors((prev) => ({ ...prev, [field]: error }));
     } else {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-      // Release lock if this field held it
+      setErrors((prev) => ({ ...prev, [field]: '' }));
       if (focusLockRef.current === field) {
         focusLockRef.current = null;
       }
     }
   };
 
-  // Handle Focus Trap on KeyDown (Tab/Enter)
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
     field: 'username' | 'password',
@@ -70,8 +55,8 @@ const Login: React.FC = () => {
     if (e.key === 'Tab' || e.key === 'Enter') {
       const error = validate(field, value);
       if (error) {
-        e.preventDefault(); // Stop movement
-        setErrors(prev => ({ ...prev, [field]: error }));
+        e.preventDefault();
+        setErrors((prev) => ({ ...prev, [field]: error }));
       }
     }
   };
@@ -86,7 +71,6 @@ const Login: React.FC = () => {
     if (userError || passError) {
       setErrors({ username: userError, password: passError });
 
-      // Prioritize focusing the first error and set lock
       if (userError) {
         userRef.current?.focus();
         focusLockRef.current = 'username';
@@ -97,16 +81,17 @@ const Login: React.FC = () => {
       return;
     }
 
+    setLoading(true);
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: username,
-        password: password,
+        password,
       });
 
       if (error) {
-        // If user not found (or invalid credentials), redirect to register
         if (error.message.includes('Invalid login credentials') || error.status === 400) {
-          navigate('/register', { state: { email: username, password: password } });
+          navigate('/register', { state: { email: username, password } });
           return;
         }
         throw error;
@@ -116,47 +101,30 @@ const Login: React.FC = () => {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      let friendlyMessage = 'Erro ao realizar login.';
-      if (err.message.includes('Email not confirmed')) {
-        friendlyMessage = 'Por favor, confirme seu e-mail antes de entrar.';
-      } else if (err.message.includes('Invalid login credentials')) {
-        friendlyMessage = 'Credenciais inválidas.';
-      } else {
-        friendlyMessage = err.message || 'Ocorreu um erro inesperado.';
-      }
-      setLoginError(friendlyMessage);
+      setLoginError(translateSupabaseError(err?.message));
     } finally {
       setLoading(false);
     }
   };
 
-
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col items-center justify-center p-4">
-
-      {/* Login Card Container with Border and Shadow */}
       <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-2xl flex flex-col items-center">
-
         <div className="flex flex-col items-center mb-8">
           <img
             src={LOGO_URL}
-            alt="CKDEV Soluções"
+            alt="CKDEV Solucoes"
             className="h-24 w-auto object-contain mb-2 dark:invert dark:hue-rotate-180"
           />
         </div>
 
         <form onSubmit={handleLogin} className="w-full space-y-4" autoComplete="off">
-
           {loginError && (
             <div className="p-4 rounded-xl bg-red-100 text-red-700 text-sm font-medium dark:bg-red-900/30 dark:text-red-400">
               {loginError}
             </div>
           )}
 
-          {/* 
-            Anti-Autofill Hack: 
-            Hidden inputs to trick browser heuristics (especially Chrome) into filling these instead of the real ones.
-          */}
           <input type="text" name="fake_email_prevent_autofill" className="hidden" tabIndex={-1} autoComplete="off" aria-hidden="true" />
           <input type="password" name="fake_password_prevent_autofill" className="hidden" tabIndex={-1} autoComplete="off" aria-hidden="true" />
 
@@ -164,18 +132,17 @@ const Login: React.FC = () => {
             <input
               ref={userRef}
               type="email"
-              name="login_user_new" // Non-standard name to avoid heuristics
+              name="login_user_new"
               id="login_user_new"
-              autoComplete="off" // Explicitly off
+              autoComplete="off"
               placeholder="E-mail"
               value={username}
               onChange={(e) => {
                 setUsername(e.target.value);
-                // Clear error immediately if user starts typing (improves UX inside trap)
                 if (errors.username) {
                   const currentError = validate('username', e.target.value);
                   if (!currentError) {
-                    setErrors(prev => ({ ...prev, username: '' }));
+                    setErrors((prev) => ({ ...prev, username: '' }));
                     if (focusLockRef.current === 'username') focusLockRef.current = null;
                   }
                 }
@@ -193,15 +160,15 @@ const Login: React.FC = () => {
             <input
               ref={passRef}
               type="password"
-              name="login_pass_new" // Non-standard name
+              name="login_pass_new"
               id="login_pass_new"
-              autoComplete="new-password" // "new-password" is the strongest signal to stop 'current-password' autofill
+              autoComplete="new-password"
               placeholder="Senha"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
                 if (errors.password && e.target.value.trim()) {
-                  setErrors(prev => ({ ...prev, password: '' }));
+                  setErrors((prev) => ({ ...prev, password: '' }));
                   if (focusLockRef.current === 'password') focusLockRef.current = null;
                 }
               }}
@@ -237,7 +204,6 @@ const Login: React.FC = () => {
             Registrar-se
           </button>
         </div>
-
       </div>
     </div>
   );

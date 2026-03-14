@@ -3,13 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { LOGO_URL } from '../constants';
 import { Icon } from '../components/Icon';
 
+import { getAuthRedirectUrl, translateSupabaseError } from '../auth';
 import { supabase } from '../supabase';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // State for form data
   const [formData, setFormData] = useState({
     name: '',
     email: location.state?.email || '',
@@ -17,25 +17,21 @@ const Register: React.FC = () => {
     confirmPassword: location.state?.password || ''
   });
 
-  // State for UI controls
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  // Avatar state
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Refs for focus trapping
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
 
-  // Validation Regular Expressions
   const NAME_REGEX = /[^a-zA-Z\u00C0-\u00FF\s]/g;
   const EMAIL_REGEX = /^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
   const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -43,19 +39,19 @@ const Register: React.FC = () => {
   const validateField = (name: string, value: string): string => {
     switch (name) {
       case 'name':
-        if (!value.trim()) return 'O nome é obrigatório.';
+        if (!value.trim()) return 'O nome e obrigatorio.';
         return '';
       case 'email':
-        if (!value.trim()) return 'O e-mail é obrigatório.';
-        if (!EMAIL_REGEX.test(value)) return 'Formato de e-mail inválido.';
+        if (!value.trim()) return 'O e-mail e obrigatorio.';
+        if (!EMAIL_REGEX.test(value)) return 'Formato de e-mail invalido.';
         return '';
       case 'password':
-        if (!value) return 'A senha é obrigatória.';
-        if (!STRONG_PASSWORD_REGEX.test(value)) return 'Senha fraca. Mínimo 8 caracteres, letra maiúscula, minúscula, número e especial.';
+        if (!value) return 'A senha e obrigatoria.';
+        if (!STRONG_PASSWORD_REGEX.test(value)) return 'Senha fraca. Minimo 8 caracteres, letra maiuscula, minuscula, numero e especial.';
         return '';
       case 'confirmPassword':
-        if (!value) return 'A confirmação é obrigatória.';
-        if (value !== formData.password) return 'As senhas não coincidem.';
+        if (!value) return 'A confirmacao e obrigatoria.';
+        if (value !== formData.password) return 'As senhas nao coincidem.';
         return '';
       default:
         return '';
@@ -67,9 +63,9 @@ const Register: React.FC = () => {
     const error = validateField(field, value);
 
     if (error) {
-      setErrors(prev => ({ ...prev, [field]: error }));
+      setErrors((prev) => ({ ...prev, [field]: error }));
     } else {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
@@ -96,21 +92,20 @@ const Register: React.FC = () => {
 
       if (error) {
         e.preventDefault();
-        setErrors(prev => ({ ...prev, [field]: error }));
+        setErrors((prev) => ({ ...prev, [field]: error }));
       }
     }
   };
 
-  // Custom handler to avoid relying on e.target.name (since we use random names for anti-autofill)
   const updateField = (field: keyof typeof formData, value: string) => {
     if (field === 'name') {
       value = value.toUpperCase().replace(NAME_REGEX, '');
     }
 
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
 
     if (errors[field]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
@@ -123,7 +118,7 @@ const Register: React.FC = () => {
     setMessage(null);
 
     const newErrors: { [key: string]: string } = {};
-    Object.keys(formData).forEach(key => {
+    Object.keys(formData).forEach((key) => {
       const err = validateField(key, formData[key as keyof typeof formData]);
       if (err) newErrors[key] = err;
     });
@@ -155,10 +150,11 @@ const Register: React.FC = () => {
         }
       }
 
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
+          emailRedirectTo: getAuthRedirectUrl(),
           data: {
             nome_completo: formData.name,
             avatar_url: avatarUrl
@@ -168,20 +164,13 @@ const Register: React.FC = () => {
 
       if (error) throw error;
 
-      setMessage({ type: 'success', text: 'Cadastro realizado com sucesso! Verifique seu e-mail para confirmar a conta.' });
+      setMessage({ type: 'success', text: 'Cadastro realizado com sucesso. Verifique seu e-mail para confirmar a conta.' });
 
-      // Wait a bit then navigate
       setTimeout(() => {
         navigate('/');
       }, 3000);
     } catch (err: any) {
-      let friendlyMessage = 'Erro ao realizar cadastro.';
-      if (err.message.includes('User already registered')) {
-        friendlyMessage = 'Este e-mail já está cadastrado.';
-      } else {
-        friendlyMessage = err.message || 'Ocorreu um erro inesperado.';
-      }
-      setMessage({ type: 'error', text: friendlyMessage });
+      setMessage({ type: 'error', text: translateSupabaseError(err?.message) });
     } finally {
       setLoading(false);
     }
@@ -189,9 +178,7 @@ const Register: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col items-center justify-center p-4">
-
       <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-2xl flex flex-col items-center animate-fade-in-up relative">
-
         <button
           onClick={() => navigate('/')}
           className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -203,22 +190,20 @@ const Register: React.FC = () => {
         <div className="flex flex-col items-center mb-6">
           <img
             src={LOGO_URL}
-            alt="CKDEV Soluções"
+            alt="CKDEV Solucoes"
             className="h-20 w-auto object-contain mb-2 dark:invert dark:hue-rotate-180"
           />
           <h2 className="text-xl font-bold text-slate-800 dark:text-white mt-2">Crie sua conta</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Preencha os dados abaixo para começar</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Preencha os dados abaixo para comecar</p>
         </div>
 
         <form onSubmit={handleRegister} className="w-full space-y-5" autoComplete="off">
-
           {message && (
             <div className={`p-4 rounded-xl text-sm font-medium ${message.type === 'success' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
               {message.text}
             </div>
           )}
 
-          {/* Avatar Upload */}
           <div className="flex flex-col items-center mb-6">
             <div className="relative group">
               <div
@@ -257,17 +242,15 @@ const Register: React.FC = () => {
             />
           </div>
 
-          {/* Anti-Autofill Hack: Hidden inputs to trap browser autofill logic */}
           <input type="text" name="fake_email_prevent_autofill" className="hidden" tabIndex={-1} autoComplete="off" aria-hidden="true" />
           <input type="password" name="fake_password_prevent_autofill" className="hidden" tabIndex={-1} autoComplete="off" aria-hidden="true" />
           <input type="text" name="fake_name_prevent_autofill" className="hidden" tabIndex={-1} autoComplete="off" aria-hidden="true" />
 
-          {/* Name Field */}
           <div className="space-y-1">
             <input
               ref={nameRef}
               type="text"
-              name="reg_name_new" // Non-standard name
+              name="reg_name_new"
               id="reg_name_new"
               autoComplete="off"
               placeholder="Nome Completo"
@@ -282,12 +265,11 @@ const Register: React.FC = () => {
             {errors.name && <p className="text-xs text-red-500 ml-1">{errors.name}</p>}
           </div>
 
-          {/* Email Field */}
           <div className="space-y-1">
             <input
               ref={emailRef}
               type="email"
-              name="reg_email_new" // Non-standard name
+              name="reg_email_new"
               id="reg_email_new"
               autoComplete="off"
               placeholder="E-mail"
@@ -302,15 +284,14 @@ const Register: React.FC = () => {
             {errors.email && <p className="text-xs text-red-500 ml-1">{errors.email}</p>}
           </div>
 
-          {/* Password Field */}
           <div className="space-y-1">
             <div className="relative">
               <input
                 ref={passwordRef}
-                type={showPassword ? "text" : "password"}
-                name="reg_pass_new" // Non-standard name
+                type={showPassword ? 'text' : 'password'}
+                name="reg_pass_new"
                 id="reg_pass_new"
-                autoComplete="new-password" // Strong signal for new password
+                autoComplete="new-password"
                 placeholder="Senha"
                 value={formData.password}
                 onChange={(e) => updateField('password', e.target.value)}
@@ -320,22 +301,21 @@ const Register: React.FC = () => {
                 required
                 aria-label="Senha"
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} title={showPassword ? "Esconder senha" : "Mostrar senha"} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors" tabIndex={-1} aria-label={showPassword ? "Esconder senha" : "Mostrar senha"}>
-                <Icon name={showPassword ? "visibility" : "visibility_off"} />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} title={showPassword ? 'Esconder senha' : 'Mostrar senha'} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors" tabIndex={-1} aria-label={showPassword ? 'Esconder senha' : 'Mostrar senha'}>
+                <Icon name={showPassword ? 'visibility' : 'visibility_off'} />
               </button>
             </div>
             {errors.password && <p className="text-xs text-red-500 ml-1 leading-tight">{errors.password}</p>}
           </div>
 
-          {/* Confirm Password Field */}
           <div className="space-y-1">
             <div className="relative">
               <input
                 ref={confirmPasswordRef}
-                type={showConfirmPassword ? "text" : "password"}
-                name="reg_confirm_pass_new" // Non-standard name
+                type={showConfirmPassword ? 'text' : 'password'}
+                name="reg_confirm_pass_new"
                 id="reg_confirm_pass_new"
-                autoComplete="new-password" // Strong signal
+                autoComplete="new-password"
                 placeholder="Confirmar Senha"
                 value={formData.confirmPassword}
                 onChange={(e) => updateField('confirmPassword', e.target.value)}
@@ -345,8 +325,8 @@ const Register: React.FC = () => {
                 required
                 aria-label="Confirmar Senha"
               />
-              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} title={showConfirmPassword ? "Esconder confirmação" : "Mostrar confirmação"} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors" tabIndex={-1} aria-label={showConfirmPassword ? "Esconder confirmação de senha" : "Mostrar confirmação de senha"}>
-                <Icon name={showConfirmPassword ? "visibility" : "visibility_off"} />
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} title={showConfirmPassword ? 'Esconder confirmacao' : 'Mostrar confirmacao'} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors" tabIndex={-1} aria-label={showConfirmPassword ? 'Esconder confirmacao de senha' : 'Mostrar confirmacao de senha'}>
+                <Icon name={showConfirmPassword ? 'visibility' : 'visibility_off'} />
               </button>
             </div>
             {errors.confirmPassword && <p className="text-xs text-red-500 ml-1">{errors.confirmPassword}</p>}
@@ -373,7 +353,7 @@ const Register: React.FC = () => {
         <div className="mt-8 flex flex-col items-center gap-4 text-sm w-full">
           <div className="w-full border-t border-slate-100 dark:border-slate-800"></div>
           <p className="text-slate-500 dark:text-slate-400">
-            Já possui uma conta? {' '}
+            Ja possui uma conta?{' '}
             <button
               onClick={() => navigate('/')}
               className="text-primary hover:text-orange-600 font-semibold"
@@ -382,7 +362,6 @@ const Register: React.FC = () => {
             </button>
           </p>
         </div>
-
       </div>
     </div>
   );
