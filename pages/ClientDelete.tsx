@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { Icon } from '../components/Icon';
-import { MAP_IMAGE_URL } from '../constants';
 import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
 

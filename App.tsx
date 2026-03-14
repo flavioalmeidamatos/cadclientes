@@ -16,6 +16,7 @@ const AppContent: React.FC = () => {
   const [loadingPreloader, setLoadingPreloader] = useState(true);
   const { user, loading: authLoading } = useAuth();
 
+  // Avoids rendering protected/public routes until the initial auth check finishes.
   if (authLoading) return null; // Or a smaller spinner
 
   return (
@@ -25,8 +26,10 @@ const AppContent: React.FC = () => {
       <div className={loadingPreloader ? 'fixed inset-0 opacity-0 pointer-events-none overflow-hidden' : 'block animate-fade-in'}>
         <Router>
           <Routes>
+            {/* Public routes redirect authenticated users into the app shell. */}
             <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Login />} />
             <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
+            {/* Private routes require an authenticated user; otherwise they fall back to login. */}
             <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/" />} />
             <Route path="/clients" element={user ? <ClientList /> : <Navigate to="/" />} />
             <Route path="/clients/new" element={user ? <ClientForm mode="create" /> : <Navigate to="/" />} />
@@ -42,6 +45,7 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
+    // Exposes authenticated user/session state to the entire routing tree.
     <AuthProvider>
       <AppContent />
     </AuthProvider>

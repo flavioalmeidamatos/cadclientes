@@ -17,14 +17,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check active sessions and sets the user
+        // Bootstraps auth state from an existing persisted Supabase session.
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
         });
 
-        // Listen for changes on auth state (logged in, signed out, etc.)
+        // Keeps React state in sync with login, logout, and token refresh events.
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
@@ -35,6 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const signOut = async () => {
+        // Delegates sign-out to Supabase so the auth listener can clear local state.
         await supabase.auth.signOut();
     };
 

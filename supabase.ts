@@ -9,9 +9,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
+        // Stores the session per browser tab, which matches the app's current auth UX.
         storage: window.sessionStorage,
         autoRefreshToken: true,
         persistSession: true,
+        // Allows Supabase to complete auth flows that return tokens in the URL.
         detectSessionInUrl: true
     }
 })
